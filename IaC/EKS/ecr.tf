@@ -31,6 +31,9 @@ resource "aws_iam_policy" "get_auth_token_pol" {
       }
     ]
   })
+  tags = {
+    yor_trace = "593e42e6-2d3d-4f45-923a-1520598169b9"
+  }
 }
 
 resource "aws_iam_user_policy_attachment" "get_auth_token_attach" {
