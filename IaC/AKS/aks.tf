@@ -64,6 +64,9 @@ resource "azurerm_kubernetes_cluster" "aks_cluster" {
     tenant_id          = data.azurerm_subscription.configured.tenant_id
     azure_rbac_enabled = true
   }
+  tags = {
+    git_org = "mkrle"
+  }
 }
 
 resource "azurerm_resource_provider_registration" "ewip" {
@@ -79,6 +82,9 @@ resource "azurerm_user_assigned_identity" "cnappdemo" {
   name                = "${var.prefix}-wlid"
   resource_group_name = var.create_requirements ? azurerm_resource_group.rg[0].name : var.resource_group_name
   location            = var.region
+  tags = {
+    git_org = "mkrle"
+  }
 }
 
 resource "azurerm_federated_identity_credential" "cnappdemo" {

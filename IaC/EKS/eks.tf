@@ -146,7 +146,8 @@ resource "aws_security_group" "allow_lb_sg" {
   }
 
   tags = {
-    Name = "allow-http"
+    Name    = "allow-http"
+    git_org = "mkrle"
   }
 }
 
@@ -256,6 +257,9 @@ resource "aws_iam_policy" "describe_cluster_pol" {
       }
     ]
   })
+  tags = {
+    git_org = "mkrle"
+  }
 }
 
 resource "aws_iam_user_policy_attachment" "describe_cluster_attach" {

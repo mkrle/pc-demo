@@ -31,6 +31,9 @@ resource "aws_iam_policy" "get_auth_token_pol" {
       }
     ]
   })
+  tags = {
+    git_org = "mkrle"
+  }
 }
 
 resource "aws_iam_user_policy_attachment" "get_auth_token_attach" {
