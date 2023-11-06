@@ -10,6 +10,9 @@ resource "azurerm_storage_account" "storage_acc" {
   location                 = var.region
   account_tier             = "Standard"
   min_tls_version          = "TLS1_2"
+  tags = {
+    git_org = "mkrle"
+  }
 }
 
 resource "azurerm_storage_container" "storage_container" {

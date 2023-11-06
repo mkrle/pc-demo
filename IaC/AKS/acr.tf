@@ -4,7 +4,9 @@ resource "azurerm_container_registry" "acr" {
   resource_group_name = azurerm_resource_group.rg[0].name
   sku                 = "Basic"
   location            = var.region
-  tags                = var.acr_tags
+  tags = merge(var.acr_tags, {
+    git_org = "mkrle"
+  })
 }
 
 resource "azurerm_role_assignment" "sp_acr_role" {

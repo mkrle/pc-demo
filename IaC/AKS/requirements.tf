@@ -2,6 +2,9 @@ resource "azurerm_resource_group" "rg" {
   count    = var.create_requirements ? 1 : 0
   name     = "${var.prefix}-rg"
   location = var.region
+  tags = {
+    git_org = "mkrle"
+  }
 }
 
 resource "azurerm_virtual_network" "vnet" {
@@ -13,6 +16,9 @@ resource "azurerm_virtual_network" "vnet" {
   subnet {
     name           = "${var.prefix}-subnet"
     address_prefix = "10.0.0.0/22"
+  }
+  tags = {
+    git_org = "mkrle"
   }
 }
 
