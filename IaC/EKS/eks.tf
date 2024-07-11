@@ -15,7 +15,7 @@ data "aws_availability_zones" "available" {}
 
 module "eks" {
   source  = "terraform-aws-modules/eks/aws"
-  version = "~> 18.0"
+  version = ">=20.17.2"
 
   cluster_name    = local.cluster_name_full
   cluster_version = var.cluster_version
@@ -25,7 +25,6 @@ module "eks" {
 
   cluster_addons = {
     aws-ebs-csi-driver = {
-      resolve_conflicts        = "OVERWRITE"
       service_account_role_arn = module.ebs_csi_driver_irsa_role.iam_role_arn
     }
   }
@@ -42,18 +41,12 @@ module "eks" {
       instance_types = ["t3.medium"]
       capacity_type  = "SPOT"
 
-      iam_role_additional_policies = ["arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy"]
+      iam_role_additional_policies = {
+        additional = "arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy"
+      }
     }
   }
   node_security_group_additional_rules = {
-    ingress_allow_access_from_control_plane = {
-      type                          = "ingress"
-      protocol                      = "tcp"
-      from_port                     = 9443
-      to_port                       = 9443
-      source_cluster_security_group = true
-      description                   = "Allow access from control plane to webhook port of AWS load balancer controller"
-    },
     ingress_allow_access_for_kubeseal = {
       type                          = "ingress"
       protocol                      = "tcp"
@@ -80,23 +73,12 @@ module "eks" {
     }
   }
 
-
-  manage_aws_auth_configmap = true
-
-  aws_auth_users = [
-    {
-      userarn  = data.aws_iam_user.demo_user.arn
-      username = data.aws_iam_user.demo_user.user_name
-      groups   = [local.k8s_demo_user_group_name]
-    }
-  ]
-
   cluster_tags = var.eks_tags
 }
 
 resource "null_resource" "eks_kubecfg" {
   provisioner "local-exec" {
-    command = "aws eks update-kubeconfig --name ${module.eks.cluster_id}"
+    command = "aws eks update-kubeconfig --name ${module.eks.cluster_name}"
   }
 
   depends_on = [
@@ -107,8 +89,9 @@ resource "null_resource" "eks_kubecfg" {
 module "vpc" {
   source = "terraform-aws-modules/vpc/aws"
 
-  name = "pc-demo-vpc"
-  cidr = "10.0.0.0/16"
+  #manage_default_route_table = false
+  name                       = "pc-demo-vpc"
+  cidr                       = "10.0.0.0/16"
 
   azs             = slice(data.aws_availability_zones.available.names, 0, 3)
   private_subnets = ["10.0.1.0/24", "10.0.2.0/24", "10.0.3.0/24"]
@@ -220,7 +203,7 @@ resource "helm_release" "aws_load_balancer_controller" {
 
   set {
     name  = "clusterName"
-    value = module.eks.cluster_id
+    value = module.eks.cluster_name
   }
 
   set {
