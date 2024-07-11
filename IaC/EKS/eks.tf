@@ -1,5 +1,4 @@
 locals {
-  k8s_demo_user_group_name = "eks-edit-default-namespace-group"
   # Cannot use random until https://github.com/hashicorp/terraform-provider-aws/issues/19583 is fixed
   # cluster_name_full = "${var.cluster_name}-${random_string.suffix.result}"
   cluster_name_full = var.cluster_name
@@ -31,6 +30,21 @@ module "eks" {
 
   vpc_id     = module.vpc.vpc_id
   subnet_ids = module.vpc.private_subnets
+
+  access_entries = {
+    demouser = {
+      principal_arn = data.aws_iam_user.demo_user.arn
+      policy_associations = {
+        single = {
+          policy_arn = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSEditPolicy"
+          access_scope = {
+            namespaces = ["default"]
+            type       = "namespace"
+          }
+        }
+      }
+    }
+  }
 
   eks_managed_node_groups = {
     one = {
@@ -89,9 +103,8 @@ resource "null_resource" "eks_kubecfg" {
 module "vpc" {
   source = "terraform-aws-modules/vpc/aws"
 
-  #manage_default_route_table = false
-  name                       = "pc-demo-vpc"
-  cidr                       = "10.0.0.0/16"
+  name = "pc-demo-vpc"
+  cidr = "10.0.0.0/16"
 
   azs             = slice(data.aws_availability_zones.available.names, 0, 3)
   private_subnets = ["10.0.1.0/24", "10.0.2.0/24", "10.0.3.0/24"]
@@ -172,24 +185,6 @@ resource "kubernetes_service_account" "aws_lb_sa" {
     annotations = {
       "eks.amazonaws.com/role-arn" : module.load_balancer_controller_irsa_role.iam_role_arn
     }
-  }
-}
-
-resource "kubernetes_role_binding" "edit_default_namespace_role_mapping" {
-  # checkov:skip=CKV_K8S_21: Default namespace used by deployments
-  metadata {
-    name      = "edit-default-namespace-role-mapping"
-    namespace = "default"
-  }
-  role_ref {
-    api_group = "rbac.authorization.k8s.io"
-    kind      = "ClusterRole"
-    name      = "edit"
-  }
-  subject {
-    kind      = "Group"
-    name      = local.k8s_demo_user_group_name
-    api_group = "rbac.authorization.k8s.io"
   }
 }
 
