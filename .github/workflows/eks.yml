@@ -50,6 +50,12 @@ jobs:
         pcc_user: ${{ secrets.PCC_USER }}
         pcc_pass: ${{ secrets.PCC_PASS }}
         image_name: ${{ steps.login-ecr.outputs.registry }}/${{ secrets.REPO_NAME }}:${{ github.sha }}
+    - name: Prisma Cloud image analysis sandbox
+      continue-on-error: true
+      run: |-
+        curl -s -u ${{ secrets.PCC_USER }}:${{ secrets.PCC_PASS }} -o twistcli '${{ secrets.PCC_CONSOLE_URL }}/api/v1/util/twistcli'
+        chmod 755 twistcli
+        sudo ./twistcli sandbox --address ${{ secrets.PCC_CONSOLE_URL }} --user ${{ secrets.PCC_USER }} --password ${{ secrets.PCC_PASS }} ${{ steps.login-ecr.outputs.registry }}/${{ secrets.REPO_NAME }}:${{ github.sha }}
     - name: Tag, and push the image to Amazon ECR
       id: push-image
       env:
