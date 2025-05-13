@@ -72,5 +72,5 @@ variable "s3_bucket_name" {
 
 variable "cluster_version" {
   type    = string
-  default = "1.23"
+  default = "1.32"
 }
