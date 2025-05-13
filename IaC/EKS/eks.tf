@@ -14,7 +14,7 @@ data "aws_availability_zones" "available" {}
 
 module "eks" {
   source  = "terraform-aws-modules/eks/aws"
-  version = ">=20.17.2"
+  version = ">=20.36.0"
 
   cluster_name    = local.cluster_name_full
   cluster_version = var.cluster_version
@@ -26,6 +26,8 @@ module "eks" {
     aws-ebs-csi-driver = {
       service_account_role_arn = module.ebs_csi_driver_irsa_role.iam_role_arn
     }
+    kube-proxy = {}
+    vpc-cni    = {}
   }
 
   vpc_id     = module.vpc.vpc_id
@@ -54,6 +56,7 @@ module "eks" {
 
       instance_types = ["t3.medium"]
       capacity_type  = "SPOT"
+      ami_type       = "AL2023_x86_64_STANDARD"
 
       iam_role_additional_policies = {
         additional = "arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy"
