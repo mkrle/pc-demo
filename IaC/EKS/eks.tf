@@ -14,17 +14,17 @@ data "aws_availability_zones" "available" {}
 
 module "eks" {
   source  = "terraform-aws-modules/eks/aws"
-  version = ">=20.36.0"
+  version = "=21.2.0"
 
-  cluster_name    = local.cluster_name_full
-  cluster_version = var.cluster_version
+  name               = local.cluster_name_full
+  kubernetes_version = var.cluster_version
 
-  cluster_endpoint_private_access = true
-  cluster_endpoint_public_access  = true
+  endpoint_private_access = true
+  endpoint_public_access  = true
 
-  cluster_addons = {
+  addons = {
     aws-ebs-csi-driver = {
-      service_account_role_arn = module.ebs_csi_driver_irsa_role.iam_role_arn
+      service_account_role_arn = module.ebs_csi_driver_irsa_role.arn
     }
     kube-proxy = {}
     vpc-cni    = {}
@@ -150,9 +150,9 @@ resource "aws_security_group" "allow_lb_sg" {
 }
 
 module "load_balancer_controller_irsa_role" {
-  source = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks"
+  source = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts"
 
-  role_name                              = "AmazonEKSLoadBalancerControllerRole"
+  name                                   = "AmazonEKSLoadBalancerControllerRole"
   attach_load_balancer_controller_policy = true
 
   oidc_providers = {
@@ -164,9 +164,9 @@ module "load_balancer_controller_irsa_role" {
 }
 
 module "ebs_csi_driver_irsa_role" {
-  source = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks"
+  source = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts"
 
-  role_name             = "AmazonEKS_EBS_CSI_DriverRole"
+  name                  = "AmazonEKS_EBS_CSI_DriverRole"
   attach_ebs_csi_policy = true
 
   oidc_providers = {
@@ -186,7 +186,7 @@ resource "kubernetes_service_account" "aws_lb_sa" {
     }
     namespace = "kube-system"
     annotations = {
-      "eks.amazonaws.com/role-arn" : module.load_balancer_controller_irsa_role.iam_role_arn
+      "eks.amazonaws.com/role-arn" : module.load_balancer_controller_irsa_role.arn
     }
   }
 }
@@ -199,21 +199,22 @@ resource "helm_release" "aws_load_balancer_controller" {
 
   namespace = "kube-system"
 
-  set {
-    name  = "clusterName"
-    value = module.eks.cluster_name
-  }
+  set = [
+    {
+      name  = "clusterName"
+      value = module.eks.cluster_name
+    },
 
-  set {
-    name  = "serviceAccount.create"
-    value = "false"
-  }
+    {
+      name  = "serviceAccount.create"
+      value = "false"
+    },
 
-  set {
-    name  = "serviceAccount.name"
-    value = "aws-load-balancer-controller"
-  }
-
+    {
+      name  = "serviceAccount.name"
+      value = "aws-load-balancer-controller"
+    }
+  ]
   depends_on = [
     kubernetes_service_account.aws_lb_sa,
     module.load_balancer_controller_irsa_role,
